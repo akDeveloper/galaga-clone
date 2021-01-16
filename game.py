@@ -1,7 +1,7 @@
 from __future__ import annotations
 from controls import Input
 from pygame import Rect, Surface, draw, mouse
-from pygame.sprite import Group, groupcollide, spritecollide
+from pygame.sprite import Group, groupcollide
 from graphics import Graphics, ImageFactory, SpriteSheet
 import craft
 import enemies
@@ -79,8 +79,7 @@ class PlayGameState(GameState):
         self.screen = screen
         self.actor = None
         self.group = Group()
-        self.enemies = Group()
-        self.enemies_bullets = Group()
+        self.enemies = None
         self.background: Surface = None
         self.left = Rect(0, 0, 32, self.screen.h)
         self.right = Rect(368, 0, 32, self.screen.h)
@@ -100,7 +99,6 @@ class PlayGameState(GameState):
         self.group.draw(surface)
         self.enemies.draw(surface)
         self.actor.bolts.draw(surface)
-        self.enemies_bullets.draw(surface)
 
     def get_state(self) -> GameState:
         return self
@@ -113,8 +111,7 @@ class PlayGameState(GameState):
         self.group.add(self.actor)
 
     def __load_enemies(self) -> None:
-        self.enemies.add(enemies.enemy_factory(self.enemies_bullets, self.__explosion_image_factory))
-        # enemies.generate(12, self.enemies, self.enemies_bullets, self.__explosion_image_factory)
+        self.enemies = enemies.EnemyGroup(20, self.__explosion_image_factory)
 
     def __load_background(self) -> None:
         colors = [(255, 255, 255), (255, 0, 0), (0, 0, 255)]
@@ -133,14 +130,11 @@ class PlayGameState(GameState):
         elif self.right.colliderect(self.actor.rect):
             self.actor.rect.right = self.right.left
         """ Destroy enemies when collide with actor's bolts """
-        [enemy.destroy() for enemy in groupcollide(self.enemies, self.actor.bolts, False, True)]
+        [enemy.destroy() for enemy in groupcollide(self.enemies.sprites(), self.actor.bolts, False, True)]
 
     def __update_enemies(self, time: int) -> None:
         self.enemies.update(time)
-        self.enemies_bullets.update(time)
-        bullets = spritecollide(self.actor, self.enemies_bullets, True)
-        if len(bullets) > 0:
-            self.actor.destroy()
+        self.enemies.hit_actor(self.actor)
 
     def __blit_background(self, surface: Surface) -> None:
         for star in self.__stars:

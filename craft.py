@@ -275,9 +275,10 @@ class Craft(Sprite):
     def update(self, time: int) -> None:
         if self.is_dead():
             self.kill()
-        self.__vel.x = 0
-        self.__vel.x = self.__input.direction.x * self.__speed
-        self.rect.left += self.__vel.x
+        if self.__action.name is not CraftState.DEAD:
+            self.__vel.x = 0
+            self.__vel.x = self.__input.direction.x * self.__speed
+            self.rect.left += self.__vel.x
         action = self.__control.get_action(self.__input, self.__action.name)
         if action is CraftState.ATTACK1:
             self.shoot()

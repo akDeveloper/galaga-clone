@@ -1,11 +1,12 @@
 from graphics import ImageFactory, SpriteSheet
-from pygame.sprite import Sprite, Group
+from pygame.sprite import Sprite, Group, spritecollide
 from pygame.math import Vector2
 from pygame.transform import flip
 from pygame import Rect, Surface
 from actions import Action
 from enemy_behaviour import HomeBehaviour
 from itertools import cycle
+from random import randint
 
 
 def actions() -> dict:
@@ -103,6 +104,7 @@ class Enemy(Sprite):
                  actions: list,
                  image_factory: ImageFactory,
                  explosion_image_factory: ImageFactory,
+                 bullet_factory: ImageFactory,
                  bullets_group: Group,
                  *groups: tuple):
         super().__init__(groups)
@@ -113,16 +115,11 @@ class Enemy(Sprite):
         self.rect = initial_pos
         self.__action: Action = self.__actions.get(self.FLY)
         self.__vel: Vector2 = Vector2(0, 0)
-        self.__bullet_factory = EnemyBulletFactory()
+        self.__bullet_factory = bullet_factory
         self.bullets = bullets_group
-        self.__shoot_counter = 0
-        self.behaviour = HomeBehaviour((initial_pos[0], initial_pos[1]), (initial_pos[0] + 5, initial_pos[1]))
+        self.behaviour = HomeBehaviour((initial_pos[0], initial_pos[1]), (initial_pos[0] + 1, initial_pos[1]))
 
     def update(self, time: int) -> None:
-        self.__shoot_counter += time
-        if self.__shoot_counter > 3000:
-            self.__shoot_counter = 0
-            self.shoot()
         self.__move(time)
         if self.__action.name is self.EXPLODE and self.__action.is_completed():
             self.kill()
@@ -151,17 +148,56 @@ class Enemy(Sprite):
             self.behaviour = self.behaviour.next()
 
 
-def enemy_factory(bullet_group: Group, expl: ImageFactory, img: ImageFactory = None, rect: Rect = None) -> Enemy:
-    img = EnemyImageFactory() if img is None else img
-    rect: Rect = Rect(100, 50, 16, 16) if rect is None else rect
+class EnemyGroup(object):
+    def __init__(self, count: int, expl: ImageFactory):
+        image_factory = EnemyImageFactory()
+        bullet_factory = EnemyBulletFactory()
+        self.__bullet_group = Group()
+        self.__enemies = Group()
+        self.__shoot_counter = 0
+        half = int(count / 2)
+        for i in range(half):
+            rect = Rect(64 + (i * 26), 20, 16, 16)
+            self.__enemies.add(enemy_factory(self.__bullet_group, expl, image_factory, bullet_factory, rect))
+        for i in range(half):
+            rect = Rect(64 + (i * 26), 40, 16, 16)
+            self.__enemies.add(enemy_factory(self.__bullet_group, expl, image_factory, bullet_factory, rect))
+
+    def update(self, time: int) -> None:
+        self.__enemies.update(time)
+        self.__shoot(time)
+        self.__bullet_group.update(time)
+
+    def draw(self, surface: Surface) -> None:
+        self.__enemies.draw(surface)
+        self.__bullet_group.draw(surface)
+
+    def hit_actor(self, actor: Sprite) -> None:
+        bullets = spritecollide(actor, self.__bullet_group, True)
+        if len(bullets) > 0:
+            actor.destroy()
+
+    def sprites(self) -> Group:
+        return self.__enemies
+
+    def __shoot(self, time: int) -> None:
+        if len(self.__enemies.sprites()) == 0:
+            return
+        self.__shoot_counter += time
+        if self.__shoot_counter > 3000:
+            self.__shoot_counter = 0
+            indexes = [randint(0, len(self.__enemies.sprites()) - 1) for i in range(8)]
+            for i, enemy in enumerate(self.__enemies.sprites()):
+                if i in indexes:
+                    enemy.shoot()
+
+
+def enemy_factory(bullet_group: Group,
+                  expl: ImageFactory,
+                  img: ImageFactory,
+                  bullet_factory: ImageFactory,
+                  rect: Rect) -> Enemy:
     acts: dict = {}
     for name, data in actions().items():
         acts[name] = (Action(name, data, rect))
-    return Enemy(rect, acts, img, expl, bullet_group)
-
-
-def generate(count: int, group: Group, bullet_group: Group, expl: ImageFactory) -> None:
-    img = EnemyImageFactory()
-    for i in range(count):
-        rect = Rect(64 + (i * 26), 20, 16, 16)
-        group.add(enemy_factory(bullet_group, expl, img, rect))
+    return Enemy(rect, acts, img, expl, bullet_factory, bullet_group)
