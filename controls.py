@@ -144,7 +144,7 @@ class Input(object):
         raise NotImplementedError("Implement `get_user_input` method.")
 
 
-class Joypad(Input):
+class Gamepad(Input):
     def __init__(self):
         self.joystick = None
         self.joystick_name = None
@@ -152,14 +152,14 @@ class Joypad(Input):
         self.direction = Direction()
         self.buttons = Buttons()
         self.button_maps = {
-            0: State.X,
-            1: State.A,
-            2: State.B,
-            3: State.Y,
-            4: State.L,
-            5: State.R,
-            8: State.SELECT,
-            9: State.START
+            12: State.X,
+            13: State.A,
+            14: State.B,
+            15: State.Y,
+            10: State.L,
+            11: State.R,
+            0: State.SELECT,
+            3: State.START
         }
         if get_count() > 0:
             joystick = Joystick(0)
@@ -268,10 +268,10 @@ class Controller(Input):
 
     def __init__(self):
         keyboard = Keyboard()
-        joypad = Joypad()
-        if joypad.joystick is None:
-            joypad = None
-        self.input = joypad or keyboard
+        gamepad = Gamepad()
+        if gamepad.joystick is None:
+            gamepad = None
+        self.input = gamepad or keyboard
         self.user_input = UserInput(self.get_direction(), self.get_buttons())
 
     def key_down(self, e: Event) -> None:

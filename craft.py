@@ -76,6 +76,18 @@ def actions() -> dict:
             "loop": False,
             "wait": True
         },
+        "dead": {
+            "cls1": [],
+            "attack": [],
+            "frames": [
+                {"index": 0, "delay": 6},
+                {"index": 1, "delay": 6},
+                {"index": 2, "delay": 6},
+                {"index": 3, "delay": 6},
+            ],
+            "loop": False,
+            "wait": False
+        }
     }
 
 
@@ -85,7 +97,6 @@ class CraftState(object):
     RIGHT = 'right'
     LEFT_RESTORE = 'left-restore'
     RIGHT_RESTORE = 'right-restore'
-    HURT = 'hurt'
     DEAD = 'dead'
     ATTACK1 = 'attack1'
 
@@ -94,9 +105,9 @@ class CraftState(object):
 
     def get_transitions(self) -> dict:
         return {
-            self.FLY: [self.LEFT, self.RIGHT, self.DEAD, self.HURT],
-            self.RIGHT: [self.RIGHT_RESTORE, self.DEAD, self.HURT],
-            self.LEFT: [self.LEFT_RESTORE, self.DEAD, self.HURT],
+            self.FLY: [self.LEFT, self.RIGHT, self.DEAD],
+            self.RIGHT: [self.RIGHT_RESTORE, self.DEAD],
+            self.LEFT: [self.LEFT_RESTORE, self.DEAD],
             self.LEFT_RESTORE: [self.FLY],
             self.RIGHT_RESTORE: [self.FLY]
         }
@@ -201,7 +212,7 @@ class CraftControl(object):
         }
 
     def get_action(self, input: UserInput, current: str = None) -> str:
-        if current in [CraftState.HURT, CraftState.DEAD]:
+        if current in [CraftState.DEAD]:
             return current
         motion = self.__get_motion(input.direction)
         button = self.__get_button(input.button)
@@ -238,11 +249,13 @@ class Craft(Sprite):
                  initial_pos: Rect,
                  actions: list,
                  image_factory: ImageFactory,
+                 explosion_image_factory: ImageFactory,
                  *groups: tuple):
         super().__init__(groups)
         self.__state = CraftState()
         self.rect = initial_pos
         self.__image_factory = image_factory
+        self.__explosion_image_factory = explosion_image_factory
         self.__control = CraftControl()
         self.__actions = actions
         self.__input: UserInput = None
@@ -256,7 +269,12 @@ class Craft(Sprite):
     def update_input(self, input: UserInput, time: int) -> None:
         self.__input = input
 
+    def is_dead(self) -> bool:
+        return self.__action.name is CraftState.DEAD and self.__action.is_completed()
+
     def update(self, time: int) -> None:
+        if self.is_dead():
+            self.kill()
         self.__vel.x = 0
         self.__vel.x = self.__input.direction.x * self.__speed
         self.rect.left += self.__vel.x
@@ -278,10 +296,14 @@ class Craft(Sprite):
         bolt = Bolt(pos, self.__bolt_factory)
         self.bolts.add(bolt)
 
+    def destroy(self) -> None:
+        self.__action = self.__actions.get(CraftState.DEAD)
+        self.__image_factory = self.__explosion_image_factory
 
-def factory() -> Craft:
+
+def factory(expl: ImageFactory) -> Craft:
     acts: dict = {}
     rect: Rect = Rect(100, 270, 16, 24)
     for name, data in actions().items():
         acts[name] = (Action(name, data, rect))
-    return Craft(rect, acts, CraftImageFactory())
+    return Craft(rect, acts, CraftImageFactory(), expl)
