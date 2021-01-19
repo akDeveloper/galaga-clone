@@ -4,7 +4,7 @@ from pygame.math import Vector2
 from pygame.transform import flip
 from pygame import Rect, Surface
 from actions import Action
-from enemy_behaviour import HomeBehaviour
+from enemy_behaviour import HomeBehaviour, Behaviour, DiveBehaviour
 from itertools import cycle
 from random import randint
 
@@ -128,6 +128,12 @@ class Enemy(Sprite):
         if self.__vel.y < 0:
             self.image = flip(self.image, False, True)
 
+    def set_behaviour(self, behaviour: Behaviour) -> None:
+        self.behaviour = behaviour
+
+    def get_behaviour(self) -> Behaviour:
+        return self.behaviour
+
     def shoot(self) -> None:
         pos = Rect(0, 0, 5, 5)
         pos.center = self.rect.center
@@ -155,11 +161,13 @@ class EnemyGroup(object):
         self.__bullet_group = Group()
         self.__enemies = Group()
         self.__shoot_counter = 0
+        self.__dive_counter = 0
         for rect in pos:
             self.__enemies.add(enemy_factory(self.__bullet_group, expl, image_factory, bullet_factory, rect))
 
     def update(self, time: int) -> None:
         self.__enemies.update(time)
+        self.__dive(time)
         self.__shoot(time)
         self.__bullet_group.update(time)
 
@@ -174,6 +182,20 @@ class EnemyGroup(object):
 
     def sprites(self) -> Group:
         return self.__enemies
+
+    def __dive(self, time: int) -> None:
+        if len(self.__enemies.sprites()) == 0:
+            return
+        self.__dive_counter += time
+        if self.__dive_counter > 2000:
+            self.__dive_counter = 0
+            indexes = [randint(0, len(self.__enemies.sprites()) - 1) for i in range(2)]
+            for i, enemy in enumerate(self.__enemies.sprites()):
+                if i in indexes:
+                    b = enemy.get_behaviour()
+                    target = (randint(32, 368), 330)
+                    n = DiveBehaviour(b.steer.pos, target, enemy.initial)
+                    enemy.set_behaviour(n)
 
     def __shoot(self, time: int) -> None:
         if len(self.__enemies.sprites()) == 0:

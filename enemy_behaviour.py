@@ -59,8 +59,7 @@ class HomeBehaviour(Behaviour):
         return self.steer.pos == self.target
 
     def next(self) -> Behaviour:
-        target = (randint(32, 368), 330)
-        return DiveBehaviour(self.steer.pos, target, self.target)
+        return self
 
     def update(self, time: int) -> None:
         self.steer.update(self.target)
