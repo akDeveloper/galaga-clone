@@ -3,6 +3,7 @@ from controls import Input
 from pygame import Rect, Surface, draw, mouse
 from pygame.sprite import Group, groupcollide
 from graphics import Graphics, ImageFactory, SpriteSheet
+from tiled_parser import TiledParser
 import craft
 import enemies
 import random
@@ -81,8 +82,14 @@ class PlayGameState(GameState):
         self.group = Group()
         self.enemies = None
         self.background: Surface = None
-        self.left = Rect(0, 0, 32, self.screen.h)
-        self.right = Rect(368, 0, 32, self.screen.h)
+        self.map = TiledParser('resources/levels/level1.json').get_map()
+        self.map.set_screen(screen)
+        platforms = self.map.get_platforms()
+        for platform in platforms:
+            if platform.get_type() == 'left':
+                self.left = platform.get_rect()
+            if platform.get_type() == 'right':
+                self.right = platform.get_rect()
         self.__stars: list = []
         self.__explosion_image_factory = ExplosionImageFactory()
         self.__load_background()
@@ -107,11 +114,16 @@ class PlayGameState(GameState):
         pass
 
     def __load_actor(self) -> None:
-        self.actor = craft.factory(self.__explosion_image_factory)
+        pos = self.map.get_actor().get_items_index(0).get_rect()
+        self.actor = craft.factory(self.__explosion_image_factory, pos)
         self.group.add(self.actor)
 
     def __load_enemies(self) -> None:
-        self.enemies = enemies.EnemyGroup(20, self.__explosion_image_factory)
+        rects: list = []
+        enem = self.map.get_enemies()[0]
+        for rect in enem.get_items():
+            rects.append(rect.get_rect())
+        self.enemies = enemies.EnemyGroup(rects, self.__explosion_image_factory)
 
     def __load_background(self) -> None:
         colors = [(255, 255, 255), (255, 0, 0), (0, 0, 255)]

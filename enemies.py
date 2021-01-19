@@ -149,18 +149,13 @@ class Enemy(Sprite):
 
 
 class EnemyGroup(object):
-    def __init__(self, count: int, expl: ImageFactory):
+    def __init__(self, pos: list, expl: ImageFactory):
         image_factory = EnemyImageFactory()
         bullet_factory = EnemyBulletFactory()
         self.__bullet_group = Group()
         self.__enemies = Group()
         self.__shoot_counter = 0
-        half = int(count / 2)
-        for i in range(half):
-            rect = Rect(64 + (i * 26), 20, 16, 16)
-            self.__enemies.add(enemy_factory(self.__bullet_group, expl, image_factory, bullet_factory, rect))
-        for i in range(half):
-            rect = Rect(64 + (i * 26), 40, 16, 16)
+        for rect in pos:
             self.__enemies.add(enemy_factory(self.__bullet_group, expl, image_factory, bullet_factory, rect))
 
     def update(self, time: int) -> None:
@@ -186,7 +181,7 @@ class EnemyGroup(object):
         self.__shoot_counter += time
         if self.__shoot_counter > 3000:
             self.__shoot_counter = 0
-            indexes = [randint(0, len(self.__enemies.sprites()) - 1) for i in range(8)]
+            indexes = [randint(0, len(self.__enemies.sprites()) - 1) for i in range(4)]
             for i, enemy in enumerate(self.__enemies.sprites()):
                 if i in indexes:
                     enemy.shoot()

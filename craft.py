@@ -302,9 +302,8 @@ class Craft(Sprite):
         self.__image_factory = self.__explosion_image_factory
 
 
-def factory(expl: ImageFactory) -> Craft:
+def factory(expl: ImageFactory, pos: Rect) -> Craft:
     acts: dict = {}
-    rect: Rect = Rect(100, 270, 16, 24)
     for name, data in actions().items():
-        acts[name] = (Action(name, data, rect))
-    return Craft(rect, acts, CraftImageFactory(), expl)
+        acts[name] = (Action(name, data, pos))
+    return Craft(pos, acts, CraftImageFactory(), expl)
