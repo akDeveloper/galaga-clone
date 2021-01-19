@@ -1,4 +1,4 @@
-from random import randint, uniform
+from random import uniform
 from pygame.math import Vector2
 
 
