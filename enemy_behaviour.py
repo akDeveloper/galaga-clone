@@ -65,6 +65,23 @@ class HomeBehaviour(Behaviour):
         self.steer.update(self.target)
 
 
+class ReturnBehaviour(Behaviour):
+    def __init__(self, source: tuple, target: tuple):
+        self.steer = EnemySteer(source)
+        self.source = source
+        self.target = target
+
+    def is_completed(self) -> bool:
+        return self.steer.desired.length() < 0.5
+        # return self.steer.pos == self.target
+
+    def next(self) -> Behaviour:
+        return HomeBehaviour(self.steer.pos, self.target)
+
+    def update(self, time: int) -> None:
+        self.steer.update(self.target)
+
+
 class DiveBehaviour(Behaviour):
     def __init__(self, source: tuple, target: tuple, home: tuple):
         self.steer = EnemySteer(source)
@@ -76,7 +93,7 @@ class DiveBehaviour(Behaviour):
         return self.steer.desired.length() < 0.5
 
     def next(self) -> Behaviour:
-        return HomeBehaviour(self.steer.pos, self.home)
+        return ReturnBehaviour(self.steer.pos, self.home)
 
     def update(self, time: int) -> None:
         self.steer.update(self.target)

@@ -109,7 +109,8 @@ class CraftState(object):
             self.RIGHT: [self.RIGHT_RESTORE, self.DEAD],
             self.LEFT: [self.LEFT_RESTORE, self.DEAD],
             self.LEFT_RESTORE: [self.FLY],
-            self.RIGHT_RESTORE: [self.FLY]
+            self.RIGHT_RESTORE: [self.FLY],
+            self.DEAD: [self.FLY]
         }
 
     def to(self, current: str, new: str, action: Action) -> str:
@@ -255,6 +256,7 @@ class Craft(Sprite):
         self.__state = CraftState()
         self.rect = initial_pos
         self.__image_factory = image_factory
+        self.__craft_image_factory = image_factory
         self.__explosion_image_factory = explosion_image_factory
         self.__control = CraftControl()
         self.__actions = actions
@@ -265,6 +267,9 @@ class Craft(Sprite):
         self.__bolt_factory = BoltImageFactory()
         self.bolts: Group = Group()
         self.__max_bolts = 3
+        self.__invincible_counter = 0
+        self.__invincible_time = 3000
+        self.__invincible = False
 
     def update_input(self, input: UserInput, time: int) -> None:
         self.__input = input
@@ -272,7 +277,23 @@ class Craft(Sprite):
     def is_dead(self) -> bool:
         return self.__action.name is CraftState.DEAD and self.__action.is_completed()
 
+    def get_action(self) -> str:
+        return self.__action
+
+    def respawn(self) -> None:
+        self.__image_factory = self.__craft_image_factory
+        self.__apply_action(CraftState.FLY)
+        self.__invincible = True
+
+    def is_invincible(self) -> bool:
+        return self.__invincible
+
     def update(self, time: int) -> None:
+        if self.is_invincible():
+            self.__invincible_counter += time
+        if self.__invincible_counter >= self.__invincible_time:
+            self.__invincible_counter = 0
+            self.__invincible = False
         if self.is_dead():
             self.kill()
         if self.__action.name is not CraftState.DEAD:
@@ -282,12 +303,15 @@ class Craft(Sprite):
         action = self.__control.get_action(self.__input, self.__action.name)
         if action is CraftState.ATTACK1:
             self.shoot()
+        self.__apply_action(action)
+        self.bolts.update(time)
+
+    def __apply_action(self, action: str) -> None:
         action = self.__state.to(self.__action.name, action, self.__action)
         new_action: Action = self.__actions.get(action)
         self.__action = Transition(self.__action).to(new_action)
         self.__action.next()
         self.image = self.__image_factory.get_image(self.__action.frame.get_index())
-        self.bolts.update(time)
 
     def shoot(self) -> None:
         if len(self.bolts) >= self.__max_bolts:

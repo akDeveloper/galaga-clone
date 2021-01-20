@@ -128,6 +128,9 @@ class Enemy(Sprite):
         if self.__vel.y < 0:
             self.image = flip(self.image, False, True)
 
+    def in_home(self) -> bool:
+        return isinstance(self.behaviour, HomeBehaviour)
+
     def set_behaviour(self, behaviour: Behaviour) -> None:
         self.behaviour = behaviour
 
@@ -155,6 +158,9 @@ class Enemy(Sprite):
 
 
 class EnemyGroup(object):
+    DIVE_TIME = 4000
+    SHOOT_TIME = 3000
+
     def __init__(self, pos: list, expl: ImageFactory):
         image_factory = EnemyImageFactory()
         bullet_factory = EnemyBulletFactory()
@@ -177,20 +183,23 @@ class EnemyGroup(object):
 
     def hit_actor(self, actor: Sprite) -> None:
         bullets = spritecollide(actor, self.__bullet_group, True)
-        if len(bullets) > 0:
+        if len(bullets) > 0 and not actor.is_invincible():
             actor.destroy()
 
     def sprites(self) -> Group:
         return self.__enemies
 
+    def get_home_sprites(self) -> list:
+        return list(filter(lambda e: e.in_home() is True, self.__enemies.sprites()))
+
     def __dive(self, time: int) -> None:
-        if len(self.__enemies.sprites()) == 0:
+        if len(self.get_home_sprites()) == 0:
             return
         self.__dive_counter += time
-        if self.__dive_counter > 2000:
+        if self.__dive_counter > self.DIVE_TIME:
             self.__dive_counter = 0
-            indexes = [randint(0, len(self.__enemies.sprites()) - 1) for i in range(2)]
-            for i, enemy in enumerate(self.__enemies.sprites()):
+            indexes = [randint(0, len(self.get_home_sprites()) - 1) for i in range(2)]
+            for i, enemy in enumerate(self.get_home_sprites()):
                 if i in indexes:
                     b = enemy.get_behaviour()
                     target = (randint(32, 368), 330)
@@ -201,7 +210,7 @@ class EnemyGroup(object):
         if len(self.__enemies.sprites()) == 0:
             return
         self.__shoot_counter += time
-        if self.__shoot_counter > 3000:
+        if self.__shoot_counter > self.SHOOT_TIME:
             self.__shoot_counter = 0
             indexes = [randint(0, len(self.__enemies.sprites()) - 1) for i in range(4)]
             for i, enemy in enumerate(self.__enemies.sprites()):

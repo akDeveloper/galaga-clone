@@ -92,6 +92,7 @@ class PlayGameState(GameState):
                 self.right = platform.get_rect()
         self.__stars: list = []
         self.__explosion_image_factory = ExplosionImageFactory()
+        self.__respawn_counter = 0
         self.__load_background()
         self.__load_actor()
         self.__load_enemies()
@@ -134,6 +135,7 @@ class PlayGameState(GameState):
             )
 
     def __update_actor(self, time, input: Input) -> None:
+        self.__respawn_actor(time)
         self.actor.update_input(input.get_user_input(), time)
         self.actor.update(time)
         """ Can only move within stage limits """
@@ -156,5 +158,10 @@ class PlayGameState(GameState):
                 star[1] = 0
                 star[0] = random.randint(self.left.w, self.right.left)
 
-    def __respawn_actor(self) -> None:
-        pass
+    def __respawn_actor(self, time: int) -> None:
+        if self.actor.get_action().name is craft.CraftState.DEAD and self.actor.get_action().is_completed():
+            self.__respawn_counter += time
+        if self.__respawn_counter > 2000:
+            self.actor.respawn()
+            self.group.add(self.actor)
+            self.__respawn_counter = 0
