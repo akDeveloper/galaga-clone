@@ -87,6 +87,10 @@ class PlayGameState(GameState):
         self.map.set_screen(screen)
         self.limits: list = []
         for platform in self.map.get_platforms():
+            if platform.get_type() == 'left':
+                self.left = platform.get_rect()
+            if platform.get_type() == 'right':
+                self.right = platform.get_rect()
             self.limits.append(platform.get_rect())
         self.__stars: list = []
         self.__explosion_image_factory = ExplosionImageFactory()
