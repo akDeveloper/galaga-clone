@@ -253,8 +253,10 @@ class Craft(Sprite):
                  explosion_image_factory: ImageFactory,
                  *groups: tuple):
         super().__init__(groups)
+        self.__points = 0
         self.__state = CraftState()
-        self.rect = initial_pos
+        self.__initial = initial_pos
+        self.rect = self.__initial.copy()
         self.__image_factory = image_factory
         self.__craft_image_factory = image_factory
         self.__explosion_image_factory = explosion_image_factory
@@ -270,12 +272,29 @@ class Craft(Sprite):
         self.__invincible_counter = 0
         self.__invincible_time = 3000
         self.__invincible = False
+        self.__lifes = 2
+        self.__max_lifes = 4
 
     def update_input(self, input: UserInput, time: int) -> None:
         self.__input = input
 
+    def get_lifes(self) -> int:
+        return self.__lifes
+
+    def add_points(self, points: int) -> None:
+        self.__points += points
+
+    def get_points(self) -> int:
+        return self.__points
+
+    def get_vel(self) -> Vector2:
+        return self.__vel
+
     def is_dead(self) -> bool:
         return self.__action.name is CraftState.DEAD and self.__action.is_completed()
+
+    def is_alive(self) -> bool:
+        return self.__action.name is not CraftState.DEAD
 
     def get_action(self) -> str:
         return self.__action
@@ -284,16 +303,19 @@ class Craft(Sprite):
         self.__image_factory = self.__craft_image_factory
         self.__apply_action(CraftState.FLY)
         self.__invincible = True
+        self.__lifes -= 1
+        self.rect = self.__initial.copy()
+
+    def can_respawn(self) -> bool:
+        return self.__action.name is CraftState.DEAD \
+            and self.__action.is_completed() \
+            and self.__lifes > 0
 
     def is_invincible(self) -> bool:
         return self.__invincible
 
     def update(self, time: int) -> None:
-        if self.is_invincible():
-            self.__invincible_counter += time
-        if self.__invincible_counter >= self.__invincible_time:
-            self.__invincible_counter = 0
-            self.__invincible = False
+        self.__invincibility(time)
         if self.is_dead():
             self.kill()
         if self.__action.name is not CraftState.DEAD:
@@ -311,7 +333,19 @@ class Craft(Sprite):
         new_action: Action = self.__actions.get(action)
         self.__action = Transition(self.__action).to(new_action)
         self.__action.next()
-        self.image = self.__image_factory.get_image(self.__action.frame.get_index())
+        if self.is_invincible():
+            img = self.__image_factory.get_image(self.__action.frame.get_index()).copy()
+            img.set_alpha(80)
+            self.image = img
+        else:
+            self.image = self.__image_factory.get_image(self.__action.frame.get_index())
+
+    def __invincibility(self, time: int) -> None:
+        if self.is_invincible():
+            self.__invincible_counter += time
+        if self.__invincible_counter >= self.__invincible_time:
+            self.__invincible_counter = 0
+            self.__invincible = False
 
     def shoot(self) -> None:
         if len(self.bolts) >= self.__max_bolts:

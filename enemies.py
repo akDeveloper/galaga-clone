@@ -108,6 +108,7 @@ class Enemy(Sprite):
                  bullets_group: Group,
                  *groups: tuple):
         super().__init__(groups)
+        self.points = 50
         self.__actions = actions
         self.__image_factory = image_factory
         self.__explosion_image_factory = explosion_image_factory
@@ -117,7 +118,7 @@ class Enemy(Sprite):
         self.__vel: Vector2 = Vector2(0, 0)
         self.__bullet_factory = bullet_factory
         self.bullets = bullets_group
-        self.behaviour = HomeBehaviour((initial_pos[0], initial_pos[1]), (initial_pos[0] + 1, initial_pos[1]))
+        self.behaviour = HomeBehaviour((0, -20), (initial_pos[0], initial_pos[1]))
 
     def update(self, time: int) -> None:
         self.__move(time)
@@ -143,7 +144,10 @@ class Enemy(Sprite):
         bullet = EnemyBullet(pos, self.__bullet_factory)
         self.bullets.add(bullet)
 
-    def destroy(self) -> None:
+    def destroy(self, actor: Sprite) -> None:
+        if self.__action.name == self.EXPLODE:
+            return
+        actor.add_points(self.points)
         self.__action = self.__actions.get(self.EXPLODE)
         self.__image_factory = self.__explosion_image_factory
 
@@ -159,7 +163,7 @@ class Enemy(Sprite):
 
 class EnemyGroup(object):
     DIVE_TIME = 4000
-    SHOOT_TIME = 3000
+    SHOOT_TIME = 700
 
     def __init__(self, pos: list, expl: ImageFactory):
         image_factory = EnemyImageFactory()
@@ -182,6 +186,8 @@ class EnemyGroup(object):
         self.__bullet_group.draw(surface)
 
     def hit_actor(self, actor: Sprite) -> None:
+        if not actor.is_alive():
+            return
         bullets = spritecollide(actor, self.__bullet_group, True)
         if len(bullets) > 0 and not actor.is_invincible():
             actor.destroy()
@@ -189,8 +195,14 @@ class EnemyGroup(object):
     def sprites(self) -> Group:
         return self.__enemies
 
+    def count(self) -> int:
+        return len(self.__enemies.sprites())
+
     def get_home_sprites(self) -> list:
         return list(filter(lambda e: e.in_home() is True, self.__enemies.sprites()))
+
+    def get_dive_sprites(self) -> list:
+        return list(filter(lambda e: e.in_home() is False, self.__enemies.sprites()))
 
     def __dive(self, time: int) -> None:
         if len(self.get_home_sprites()) == 0:
@@ -207,13 +219,13 @@ class EnemyGroup(object):
                     enemy.set_behaviour(n)
 
     def __shoot(self, time: int) -> None:
-        if len(self.__enemies.sprites()) == 0:
+        if len(self.get_dive_sprites()) == 0:
             return
         self.__shoot_counter += time
         if self.__shoot_counter > self.SHOOT_TIME:
             self.__shoot_counter = 0
-            indexes = [randint(0, len(self.__enemies.sprites()) - 1) for i in range(4)]
-            for i, enemy in enumerate(self.__enemies.sprites()):
+            indexes = [randint(0, len(self.get_dive_sprites()) - 1) for i in range(4)]
+            for i, enemy in enumerate(self.get_dive_sprites()):
                 if i in indexes:
                     enemy.shoot()
 

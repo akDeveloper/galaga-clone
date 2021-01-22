@@ -7,6 +7,7 @@ from tiled_parser import TiledParser
 import craft
 import enemies
 import random
+from font import FontFactory
 
 
 class Game(object):
@@ -84,18 +85,16 @@ class PlayGameState(GameState):
         self.background: Surface = None
         self.map = TiledParser('resources/levels/level1.json').get_map()
         self.map.set_screen(screen)
-        platforms = self.map.get_platforms()
-        for platform in platforms:
-            if platform.get_type() == 'left':
-                self.left = platform.get_rect()
-            if platform.get_type() == 'right':
-                self.right = platform.get_rect()
+        self.limits: list = []
+        for platform in self.map.get_platforms():
+            self.limits.append(platform.get_rect())
         self.__stars: list = []
         self.__explosion_image_factory = ExplosionImageFactory()
         self.__respawn_counter = 0
         self.__load_background()
         self.__load_actor()
         self.__load_enemies()
+        self.__font = FontFactory()
 
     def update(self, time: int, input: Input) -> None:
         self.__update_actor(time, input)
@@ -107,6 +106,7 @@ class PlayGameState(GameState):
         self.group.draw(surface)
         self.enemies.draw(surface)
         self.actor.bolts.draw(surface)
+        surface.blit(self.__font.get_number(self.actor.get_points()), (168, 0))
 
     def get_state(self) -> GameState:
         return self
@@ -139,12 +139,14 @@ class PlayGameState(GameState):
         self.actor.update_input(input.get_user_input(), time)
         self.actor.update(time)
         """ Can only move within stage limits """
-        if self.left.colliderect(self.actor.rect):
-            self.actor.rect.left = self.left.right
-        elif self.right.colliderect(self.actor.rect):
-            self.actor.rect.right = self.right.left
+        for limit in self.limits:
+            if limit.colliderect(self.actor.rect):
+                if self.actor.get_vel().x < 0:
+                    self.actor.rect.left = limit.right
+                else:
+                    self.actor.rect.right = limit.left
         """ Destroy enemies when collide with actor's bolts """
-        [enemy.destroy() for enemy in groupcollide(self.enemies.sprites(), self.actor.bolts, False, True)]
+        [enemy.destroy(self.actor) for enemy in groupcollide(self.enemies.sprites(), self.actor.bolts, False, True)]
 
     def __update_enemies(self, time: int) -> None:
         self.enemies.update(time)
@@ -159,7 +161,7 @@ class PlayGameState(GameState):
                 star[0] = random.randint(self.left.w, self.right.left)
 
     def __respawn_actor(self, time: int) -> None:
-        if self.actor.get_action().name is craft.CraftState.DEAD and self.actor.get_action().is_completed():
+        if self.actor.can_respawn():
             self.__respawn_counter += time
         if self.__respawn_counter > 2000:
             self.actor.respawn()
