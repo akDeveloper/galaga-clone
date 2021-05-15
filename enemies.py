@@ -17,8 +17,8 @@ def actions() -> dict:
             ],
             "attack": [],
             "frames": [
-                {"index": 0, "delay": 6},
-                {"index": 1, "delay": 6},
+                {"index": 0, "delay": 2},
+                {"index": 1, "delay": 2},
             ],
             "loop": True,
             "wait": False
@@ -27,10 +27,10 @@ def actions() -> dict:
             "cls1": [],
             "attack": [],
             "frames": [
-                {"index": 0, "delay": 6},
-                {"index": 1, "delay": 6},
-                {"index": 2, "delay": 6},
-                {"index": 3, "delay": 6},
+                {"index": 0, "delay": 2},
+                {"index": 1, "delay": 2},
+                {"index": 2, "delay": 2},
+                {"index": 3, "delay": 2},
             ],
             "loop": False,
             "wait": False
@@ -60,7 +60,7 @@ class EnemyBullet(Sprite):
         self.__image_factory = image_factory
         self.rect = rect
         self.__image_index = cycle([0, 1])
-        self.__speed = 1
+        self.__speed = 2
 
     def update(self, time: int) -> None:
         self.rect.top += self.__speed
@@ -163,7 +163,7 @@ class Enemy(Sprite):
 
 class EnemyGroup(object):
     DIVE_TIME = 4000
-    SHOOT_TIME = 700
+    SHOOT_TIME = 1000
 
     def __init__(self, pos: list, expl: ImageFactory):
         image_factory = EnemyImageFactory()

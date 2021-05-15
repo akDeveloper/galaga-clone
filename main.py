@@ -6,7 +6,7 @@ from controls import Controller
 
 
 class App(object):
-    FPS = 60
+    FPS = 30
 
     def __init__(self):
         self.running = True

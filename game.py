@@ -11,8 +11,8 @@ from font import FontFactory
 
 
 class Game(object):
-    SCREEN_WIDTH = 400
-    SCREEN_HEIGHT = 300
+    SCREEN_WIDTH = 320
+    SCREEN_HEIGHT = 255
 
     def __init__(self, input: Input):
         self.graphics = Graphics(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)

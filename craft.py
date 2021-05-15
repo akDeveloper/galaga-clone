@@ -80,10 +80,10 @@ def actions() -> dict:
             "cls1": [],
             "attack": [],
             "frames": [
-                {"index": 0, "delay": 6},
-                {"index": 1, "delay": 6},
-                {"index": 2, "delay": 6},
-                {"index": 3, "delay": 6},
+                {"index": 0, "delay": 2},
+                {"index": 1, "delay": 2},
+                {"index": 2, "delay": 2},
+                {"index": 3, "delay": 2},
             ],
             "loop": False,
             "wait": False
@@ -101,7 +101,7 @@ class CraftState(object):
     ATTACK1 = 'attack1'
 
     def get_speed(self) -> int:
-        return 2
+        return 4
 
     def get_transitions(self) -> dict:
         return {

@@ -102,7 +102,7 @@ class DiveBehaviour(Behaviour):
 class EnemySteer(object):
     def __init__(self, pos: tuple):
         self.desired = None
-        self.max_speed = 3
+        self.max_speed = 5
         self.max_force = 0.1
         self.approach_radius = 30
         self.pos = Vector2(pos[0], pos[1])
