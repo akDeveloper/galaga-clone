@@ -111,6 +111,8 @@ class PlayGameState(GameState):
         self.enemies.draw(surface)
         self.actor.bolts.draw(surface)
         surface.blit(self.__font.get_number(self.actor.get_points()), (168, 0))
+        # Info panel
+        surface.fill((41, 41, 41), self.left)
 
     def get_state(self) -> GameState:
         return self
